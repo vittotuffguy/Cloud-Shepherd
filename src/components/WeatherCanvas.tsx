@@ -298,9 +298,12 @@ export const WeatherCanvas: React.FC<WeatherCanvasProps> = ({
         // Growth or dissolve animation
         if (cloud.dissolving) {
           cloud.scale = Math.max(0, cloud.scale - delta * 2.2);
-          cloud.opacity = Math.max(0, cloud.scale);
-        } else if (cloud.scale < cloud.targetScale) {
-          cloud.scale = Math.min(cloud.targetScale, cloud.scale + delta * 2.4);
+          cloud.opacity = Math.max(0, cloud.scale / cloud.targetScale);
+        } else {
+          if (cloud.scale < cloud.targetScale) {
+            cloud.scale = Math.min(cloud.targetScale, cloud.scale + delta * 2.8);
+          }
+          cloud.opacity = 1.0;
         }
 
         // Skip completely dissolved clouds
@@ -374,23 +377,7 @@ export const WeatherCanvas: React.FC<WeatherCanvasProps> = ({
           }
         }
 
-        // Draw Cloud Shade/Shadow on Landscape Surface
-        // Wispy = faint, Puffy = gentle, Rain = moderate, Storm = heavy
-        if (cloud.scale > 0.02 && cloud.opacity > 0.02) {
-          const shadowGroundY = getGroundY(cloud.x, width, height) + 12;
-          const shadowRadiusX = Math.max(0.1, (cloud.baseWidth * cloud.scale * 0.9) / 2);
-          const shadowRadiusY = Math.max(0.1, (14 * cloud.scale) / 2);
-          const shadowOpacity = (cloud.shadowOpacity || 0.14) * cloud.opacity;
-
-          ctx.save();
-          ctx.fillStyle = `rgba(15, 23, 42, ${shadowOpacity})`;
-          ctx.beginPath();
-          ctx.ellipse(cloud.x, shadowGroundY, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-
-        // Draw the cloud
+        // Draw the cloud directly in the sky (fully opaque, vivid and distinct)
         drawCloudBody(ctx, cloud, hoveredCloudIdRef.current === cloud.id);
       });
 
@@ -505,118 +492,204 @@ export const WeatherCanvas: React.FC<WeatherCanvasProps> = ({
     const isWispy = cloud.type === 'wispy';
     const isPuffy = cloud.type === 'puffy';
 
-    // Hover outline indicator
-    if (isHovered) {
+    // Hover affordance: gentle soft backlight behind the cloud, never an overlay that dims or covers it
+    if (isHovered && !cloud.dissolving) {
       ctx.save();
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-      ctx.shadowBlur = 18;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.lineWidth = 2.5;
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.75)';
+      ctx.shadowBlur = 16;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(0, 0, (cloud.baseWidth / 2) + 12, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, (cloud.baseWidth / 2) + 6, (cloud.baseHeight / 2) + 6, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
     if (isWispy) {
-      // Wispy: thin, delicate, fast-moving, multi-curled cirrus lines
-      const ribbons = 7;
-      ctx.globalAlpha = cloud.opacity * 0.72;
-      for (let r = 0; r < ribbons; r++) {
-        const yOff = (r - ribbons / 2) * 5;
-        const widthSpread = (cloud.baseWidth / 2) * (1 - Math.abs(r - ribbons / 2) * 0.18);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-        ctx.lineWidth = 4 + (r % 3) * 1.8;
-        ctx.lineCap = 'round';
+      // Wispy: thin, delicate, fast-moving, sculpted cirrus with opaque core body
+      ctx.globalAlpha = Math.min(1.0, Math.max(0.1, cloud.opacity));
+
+      // 1. Solid opaque core foundation (graceful elongated aerodynamic body)
+      const coreGrad = ctx.createLinearGradient(0, -cloud.baseHeight / 2, 0, cloud.baseHeight / 2);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.55, '#f8fafc');
+      coreGrad.addColorStop(1, '#e2e8f0');
+
+      ctx.fillStyle = coreGrad;
+      ctx.shadowColor = 'rgba(148, 163, 184, 0.28)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+
+      // Sculpted opaque central lobes (solidly filled, easy to see against any sky)
+      ctx.beginPath();
+      ctx.ellipse(0, 0, cloud.baseWidth * 0.36, cloud.baseHeight * 0.38, -0.05, 0, Math.PI * 2);
+      ctx.ellipse(-cloud.baseWidth * 0.24, 2, cloud.baseWidth * 0.22, cloud.baseHeight * 0.3, -0.08, 0, Math.PI * 2);
+      ctx.ellipse(cloud.baseWidth * 0.24, -2, cloud.baseWidth * 0.22, cloud.baseHeight * 0.28, 0.05, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Crisp, fully opaque feathered cirrus plumes on top and along tips
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineCap = 'round';
+
+      const ribbons = [
+        { y: -8, startFrac: -0.46, endFrac: 0.44, cp1y: -14, cp2y: -4, w: 5 },
+        { y: -3, startFrac: -0.48, endFrac: 0.48, cp1y: -8, cp2y: 6, w: 6 },
+        { y: 3, startFrac: -0.44, endFrac: 0.46, cp1y: 8, cp2y: -5, w: 5.5 },
+        { y: 8, startFrac: -0.38, endFrac: 0.40, cp1y: 12, cp2y: 4, w: 4.5 },
+        { y: -10, startFrac: 0.15, endFrac: 0.52, cp1y: -16, cp2y: -6, w: 3.5 },
+        { y: 7, startFrac: -0.52, endFrac: -0.15, cp1y: 12, cp2y: 3, w: 3.5 },
+      ];
+
+      ribbons.forEach((rib) => {
+        ctx.lineWidth = rib.w;
         ctx.beginPath();
-        ctx.moveTo(-widthSpread, yOff);
+        const startX = cloud.baseWidth * rib.startFrac;
+        const endX = cloud.baseWidth * rib.endFrac;
+        ctx.moveTo(startX, rib.y);
         ctx.bezierCurveTo(
-          -widthSpread * 0.4,
-          yOff - 8 + (r % 2) * 4,
-          widthSpread * 0.4,
-          yOff + 5 - (r % 3) * 3,
-          widthSpread,
-          yOff - 4
+          startX + (endX - startX) * 0.35,
+          rib.cp1y,
+          startX + (endX - startX) * 0.7,
+          rib.cp2y,
+          endX,
+          rib.y - 2
         );
         ctx.stroke();
-      }
+      });
+
+      // Subtle pure white core highlight
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(0, -3, cloud.baseWidth * 0.28, cloud.baseHeight * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
     } else if (isPuffy) {
       // Puffy: round and slow-moving, gentle shade, warm white cumulus
-      ctx.globalAlpha = cloud.opacity;
+      ctx.globalAlpha = Math.min(1.0, Math.max(0.1, cloud.opacity));
+
+      // 1. Soft cumulus gradient fill
       const grad = ctx.createLinearGradient(0, -cloud.baseHeight / 2, 0, cloud.baseHeight / 2);
       grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.65, '#f8fafc');
-      grad.addColorStop(1, '#dbe2ef');
+      grad.addColorStop(0.55, '#f8fafc');
+      grad.addColorStop(0.85, '#e2e8f0');
+      grad.addColorStop(1, '#cbd5e1');
 
       ctx.fillStyle = grad;
-      ctx.shadowColor = 'rgba(148, 163, 184, 0.25)';
+      ctx.shadowColor = 'rgba(100, 116, 139, 0.22)';
       ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 6;
 
+      // Solid flat cumulus base foundation
+      ctx.beginPath();
+      ctx.ellipse(0, cloud.baseHeight * 0.2, cloud.baseWidth * 0.44, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Domed billow puffs
       cloud.puffs.forEach((puff) => {
         ctx.beginPath();
         ctx.arc(puff.dx, puff.dy, puff.radius, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Fluffy crowns
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      // 2. Pure opaque sunlit highlight caps on upper puffs
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#ffffff';
       cloud.puffs.forEach((puff) => {
         ctx.beginPath();
-        ctx.arc(puff.dx - puff.radius * 0.2, puff.dy - puff.radius * 0.28, puff.radius * 0.6, 0, Math.PI * 2);
+        ctx.arc(
+          puff.dx - puff.radius * 0.18,
+          puff.dy - puff.radius * 0.25,
+          puff.radius * 0.62,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
       });
     } else if (isRain) {
-      // Rain: darker and fuller, slate-blue
-      ctx.globalAlpha = cloud.opacity;
+      // Rain: darker and fuller, slate-blue nimbostratus
+      ctx.globalAlpha = Math.min(1.0, Math.max(0.1, cloud.opacity));
+
       const grad = ctx.createLinearGradient(0, -cloud.baseHeight / 2, 0, cloud.baseHeight / 2);
-      grad.addColorStop(0, '#94a3b8');
-      grad.addColorStop(0.55, '#64748b');
+      grad.addColorStop(0, '#cbd5e1');
+      grad.addColorStop(0.25, '#94a3b8');
+      grad.addColorStop(0.65, '#64748b');
       grad.addColorStop(1, '#334155');
 
       ctx.fillStyle = grad;
       ctx.shadowColor = 'rgba(15, 23, 42, 0.35)';
       ctx.shadowBlur = 14;
-      ctx.shadowOffsetY = 8;
+      ctx.shadowOffsetY = 7;
 
+      // Solid base foundation
+      ctx.beginPath();
+      ctx.ellipse(0, cloud.baseHeight * 0.22, cloud.baseWidth * 0.46, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main rain billows
       cloud.puffs.forEach((puff) => {
         ctx.beginPath();
         ctx.arc(puff.dx, puff.dy, puff.radius, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Moisture mist underside
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+      // Dark moisture base underbelly
+      ctx.fillStyle = '#1e293b';
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
       ctx.beginPath();
-      ctx.ellipse(0, cloud.baseHeight * 0.38, cloud.baseWidth * 0.42, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, cloud.baseHeight * 0.34, cloud.baseWidth * 0.42, 10, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Top silver rim highlight catching ambient light
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.55)';
+      cloud.puffs.slice(0, 3).forEach((puff) => {
+        ctx.beginPath();
+        ctx.arc(puff.dx, puff.dy - puff.radius * 0.25, puff.radius * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      });
     } else if (isStorm) {
       // Storm: large and dramatic anvil shape, deep charcoal/violet/indigo
-      ctx.globalAlpha = cloud.opacity;
+      ctx.globalAlpha = Math.min(1.0, Math.max(0.1, cloud.opacity));
+
       const stormGrad = ctx.createLinearGradient(0, -cloud.baseHeight / 2, 0, cloud.baseHeight / 2);
       stormGrad.addColorStop(0, '#64748b');
-      stormGrad.addColorStop(0.3, '#334155');
-      stormGrad.addColorStop(0.7, '#1e293b');
+      stormGrad.addColorStop(0.25, '#475569');
+      stormGrad.addColorStop(0.65, '#1e293b');
       stormGrad.addColorStop(1, '#0f172a');
 
       ctx.fillStyle = stormGrad;
-      ctx.shadowColor = 'rgba(15, 23, 42, 0.5)';
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.55)';
       ctx.shadowBlur = 20;
-      ctx.shadowOffsetY = 12;
+      ctx.shadowOffsetY = 10;
 
-      // Anvil upper shelf
+      // Massive solid anvil upper shelf
       ctx.beginPath();
-      ctx.ellipse(0, -cloud.baseHeight * 0.32, cloud.baseWidth * 0.58, 25, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -cloud.baseHeight * 0.32, cloud.baseWidth * 0.58, 26, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Cloud puffs
+      // Solid flat anvil top rim
+      ctx.fillRect(-cloud.baseWidth * 0.55, -cloud.baseHeight * 0.34, cloud.baseWidth * 1.1, 14);
+
+      // Towering billow puffs
       cloud.puffs.forEach((puff) => {
         ctx.beginPath();
         ctx.arc(puff.dx, puff.dy, puff.radius, 0, Math.PI * 2);
         ctx.fill();
       });
+
+      // Silver anvil upper rim highlight
+      ctx.fillStyle = '#94a3b8';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillRect(-cloud.baseWidth * 0.52, -cloud.baseHeight * 0.35, cloud.baseWidth * 1.04, 3.5);
+
+      // Deep dark thunderhead base
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.ellipse(0, cloud.baseHeight * 0.38, cloud.baseWidth * 0.48, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
 
       // Internal gentle lantern-like lightning glow
       if (cloud.isFlashing && cloud.flashIntensity > 0) {
@@ -643,6 +716,25 @@ export const WeatherCanvas: React.FC<WeatherCanvasProps> = ({
     ctx.restore();
   };
 
+  // Helper: Draw subtle ground shade beneath clouds on top of the landscape terrain
+  const drawCloudGroundShadows = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    clouds.forEach((cloud) => {
+      if (!cloud.dissolving || cloud.scale > 0.05) {
+        const shadowGroundY = getGroundY(cloud.x, width, height) + 8;
+        const shadowRadiusX = Math.max(0.1, (cloud.baseWidth * cloud.scale * 0.95) / 2);
+        const shadowRadiusY = Math.max(0.1, (16 * cloud.scale) / 2);
+        const shadowOpacity = (cloud.shadowOpacity || 0.16) * cloud.opacity;
+
+        ctx.save();
+        ctx.fillStyle = `rgba(15, 23, 42, ${shadowOpacity})`;
+        ctx.beginPath();
+        ctx.ellipse(cloud.x, shadowGroundY, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    });
+  };
+
   // Dispatch to the active landscape renderer
   const drawCurrentLandscape = (
     ctx: CanvasRenderingContext2D,
@@ -663,6 +755,9 @@ export const WeatherCanvas: React.FC<WeatherCanvasProps> = ({
     } else {
       drawIsland(ctx, width, height, delta, windVx, windStrength, dark, flood);
     }
+
+    // Draw subtle ground shade beneath clouds on the landscape
+    drawCloudGroundShadows(ctx, width, height);
 
     // Draw swaying flowers for all landscapes
     drawFlowers(ctx, windVx, windStrength);

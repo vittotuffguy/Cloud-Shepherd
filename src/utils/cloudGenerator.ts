@@ -21,55 +21,55 @@ export function createCloud(
 
   if (type === 'wispy') {
     // Wispy: thin, delicate, fast-moving, faint shadow
-    baseWidth = 210 + Math.random() * 70;
-    baseHeight = 42;
+    baseWidth = 220 + Math.random() * 60;
+    baseHeight = 44;
     speedMultiplier = 1.8;
-    shadowOpacity = 0.06;
-    puffs.push({ dx: 0, dy: 0, radius: 36, opacity: 0.55 });
-    puffs.push({ dx: -baseWidth * 0.3, dy: -2, radius: 26, opacity: 0.45 });
-    puffs.push({ dx: baseWidth * 0.3, dy: 2, radius: 28, opacity: 0.45 });
+    shadowOpacity = 0.08;
+    puffs.push({ dx: 0, dy: 0, radius: 36, opacity: 1.0 });
+    puffs.push({ dx: -baseWidth * 0.28, dy: -2, radius: 26, opacity: 1.0 });
+    puffs.push({ dx: baseWidth * 0.28, dy: 2, radius: 28, opacity: 1.0 });
   } else if (type === 'puffy') {
     // Puffy: round, slow-moving, gentle shade
-    baseWidth = 155 + Math.random() * 45;
+    baseWidth = 160 + Math.random() * 40;
     baseHeight = 85;
     speedMultiplier = 0.65;
-    shadowOpacity = 0.14;
-    puffs.push({ dx: 0, dy: -12, radius: 38, opacity: 0.95 }); // Central high puff
-    puffs.push({ dx: -35, dy: -6, radius: 30, opacity: 0.92 });
-    puffs.push({ dx: 38, dy: -4, radius: 32, opacity: 0.92 });
-    puffs.push({ dx: -56, dy: 7, radius: 24, opacity: 0.88 });
-    puffs.push({ dx: 54, dy: 8, radius: 25, opacity: 0.88 });
-    puffs.push({ dx: -18, dy: 9, radius: 26, opacity: 0.9 });
-    puffs.push({ dx: 18, dy: 10, radius: 27, opacity: 0.9 });
+    shadowOpacity = 0.16;
+    puffs.push({ dx: 0, dy: -12, radius: 40, opacity: 1.0 }); // Central high puff
+    puffs.push({ dx: -36, dy: -6, radius: 32, opacity: 1.0 });
+    puffs.push({ dx: 38, dy: -4, radius: 34, opacity: 1.0 });
+    puffs.push({ dx: -58, dy: 8, radius: 26, opacity: 1.0 });
+    puffs.push({ dx: 56, dy: 9, radius: 27, opacity: 1.0 });
+    puffs.push({ dx: -20, dy: 10, radius: 28, opacity: 1.0 });
+    puffs.push({ dx: 20, dy: 11, radius: 29, opacity: 1.0 });
   } else if (type === 'rain') {
     // Rain: darker and fuller, ordinary rain, moderate shade
-    baseWidth = 180 + Math.random() * 50;
+    baseWidth = 185 + Math.random() * 45;
     baseHeight = 90;
     speedMultiplier = 1.0;
-    shadowOpacity = 0.22;
-    puffs.push({ dx: 0, dy: -12, radius: 40, opacity: 0.96 });
-    puffs.push({ dx: -42, dy: -5, radius: 34, opacity: 0.95 });
-    puffs.push({ dx: 44, dy: -3, radius: 35, opacity: 0.95 });
-    puffs.push({ dx: -68, dy: 8, radius: 28, opacity: 0.92 });
-    puffs.push({ dx: 66, dy: 10, radius: 28, opacity: 0.92 });
-    puffs.push({ dx: -22, dy: 11, radius: 30, opacity: 0.95 });
-    puffs.push({ dx: 22, dy: 13, radius: 32, opacity: 0.95 });
+    shadowOpacity = 0.24;
+    puffs.push({ dx: 0, dy: -12, radius: 42, opacity: 1.0 });
+    puffs.push({ dx: -44, dy: -5, radius: 36, opacity: 1.0 });
+    puffs.push({ dx: 46, dy: -3, radius: 37, opacity: 1.0 });
+    puffs.push({ dx: -70, dy: 9, radius: 30, opacity: 1.0 });
+    puffs.push({ dx: 68, dy: 11, radius: 30, opacity: 1.0 });
+    puffs.push({ dx: -24, dy: 12, radius: 32, opacity: 1.0 });
+    puffs.push({ dx: 24, dy: 14, radius: 34, opacity: 1.0 });
   } else if (type === 'storm') {
     // Storm: large, dramatic, heavy shade, brings heavy winds & rain
-    baseWidth = 240 + Math.random() * 60;
+    baseWidth = 250 + Math.random() * 50;
     baseHeight = 135;
     speedMultiplier = 0.88;
-    shadowOpacity = 0.35;
-    puffs.push({ dx: 0, dy: -28, radius: 52, opacity: 0.98 }); // High towering core
-    puffs.push({ dx: -54, dy: -22, radius: 45, opacity: 0.96 });
-    puffs.push({ dx: 56, dy: -20, radius: 47, opacity: 0.96 });
-    puffs.push({ dx: -96, dy: -30, radius: 40, opacity: 0.94 }); // Anvil shelf
-    puffs.push({ dx: 98, dy: -28, radius: 42, opacity: 0.94 });
-    puffs.push({ dx: -38, dy: 14, radius: 36, opacity: 0.96 });
-    puffs.push({ dx: 38, dy: 16, radius: 38, opacity: 0.96 });
-    puffs.push({ dx: 0, dy: 20, radius: 40, opacity: 0.98 });
-    puffs.push({ dx: -74, dy: 20, radius: 30, opacity: 0.92 });
-    puffs.push({ dx: 76, dy: 22, radius: 30, opacity: 0.92 });
+    shadowOpacity = 0.36;
+    puffs.push({ dx: 0, dy: -28, radius: 54, opacity: 1.0 }); // High towering core
+    puffs.push({ dx: -56, dy: -22, radius: 46, opacity: 1.0 });
+    puffs.push({ dx: 58, dy: -20, radius: 48, opacity: 1.0 });
+    puffs.push({ dx: -98, dy: -30, radius: 42, opacity: 1.0 }); // Anvil shelf
+    puffs.push({ dx: 100, dy: -28, radius: 44, opacity: 1.0 });
+    puffs.push({ dx: -40, dy: 14, radius: 38, opacity: 1.0 });
+    puffs.push({ dx: 40, dy: 16, radius: 40, opacity: 1.0 });
+    puffs.push({ dx: 0, dy: 22, radius: 42, opacity: 1.0 });
+    puffs.push({ dx: -76, dy: 22, radius: 32, opacity: 1.0 });
+    puffs.push({ dx: 78, dy: 24, radius: 32, opacity: 1.0 });
   }
 
   return {
@@ -79,9 +79,9 @@ export function createCloud(
     y,
     baseWidth,
     baseHeight,
-    scale: startSmall ? 0.1 : scale,
+    scale: startSmall ? 0.3 : scale,
     targetScale: scale,
-    opacity: startSmall ? 0.1 : 1.0,
+    opacity: 1.0,
     dissolving: false,
     puffs,
     seed,
